@@ -1,0 +1,180 @@
+// Actors 
+
+var HealthBar = Actor.extend({
+   init: function(){
+      this.preventCollisions = true;
+   },
+   draw : function(ctx, delta){
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.scale(3,3);
+      ctx.fillStyle = this.color.toString();
+      ctx.font = Config.font;
+      ctx.fillText("HP ", 0, 0);
+      ctx.restore();
+      ctx.fillStyle = this.color.toString();
+      ctx.fillRect(this.x + 50, this.y - this.height, this.width, this.height);
+   }
+});
+
+var Ship = Actor.extend({
+   init : function(){
+      this.fixed = true;
+      var sprite = new Drawing.Sprite(fighter, 0, 0, 40, 40);
+      sprite.setScale(3);
+      this.setCenterDrawing(true);
+      sprite.transformAboutPoint(new Point(60, 60));
+      sprite.setRotation(-Math.PI/2);
+      this.addDrawing("fighter", sprite);
+
+
+      this.hp = Config.totalHp;
+
+      // Add event listeners
+      this.addEventListener('space', function(){
+         var b = flipFire(this.x + (flipBarrel?80:0), this.y, 0, Config.playerBulletVelocity, Color.Green);         
+         if(b) b.owner = this;
+      });
+
+      this.addEventListener('up', function(){
+         this.dy = -Config.playerSpeed;
+      });
+
+      this.addEventListener('down', function(){
+         this.dy = Config.playerSpeed;
+      });
+
+      this.addEventListener('left', function(){
+         this.dx = -Config.playerSpeed;
+      });
+
+      this.addEventListener('right', function(){
+         this.dx = Config.playerSpeed;
+      });
+
+      this.addEventListener('keyup', function(evt){
+         if(Keys.UP == evt.key || Keys.DOWN == evt.key){
+            this.dy = 0;
+         }
+         if(Keys.LEFT == evt.key || Keys.RIGHT == evt.key){
+            this.dx = 0;
+         }
+      });
+
+      this.addEventListener('collision', function(evt){
+         if(evt.other instanceof Baddie || evt.other.owner !== this){
+            hitSound.play();
+            this.blink(3, 1000, 100);
+            this.hp -= Config.enemyDamage;
+            healthBar.width = Config.healthBarWidth * (this.hp / Config.totalHp);           
+         }
+      });
+   },
+   update : function(engine, delta){
+      // Call super update
+      this.super.update.call(this, engine, delta);
+
+      if(this.hp <= 0){
+         // update game to display game over
+         gameOver = true;
+         var explodeAnim = spriteSheet.getAnimationForAll(game, 40);
+         explodeAnim.setScale(3);
+         explodeAnim.play(this.x, this.y);
+         explodeSound.play();
+         this.kill();
+      }
+
+      // Keep player in the viewport
+      if(this.x < 0) this.x = 0;
+      if(this.y < 0) this.y = 0;
+      if(this.x > engine.width - this.getWidth()) this.x = (engine.width - this.getWidth());
+      if(this.y > engine.height - this.getHeight()) this.y = (engine.height - this.getHeight());
+
+      // Custom collision for enemy bullets
+   }
+});
+
+var Bullet = Actor.extend({
+   init : function(){
+      this.addEventListener('collision', function(evt){
+         if(evt.other !== this.owner && !(evt.other instanceof Bullet)){
+            this.kill();
+         }
+      });
+   },
+   update : function(engine, delta){
+      this.super.update.call(this, engine, delta);
+
+      // Clean up if bullets leave the viewport
+      if(this.x > engine.width || 
+         this.x < 0 || 
+         this.y > engine.height || 
+         this.y < 0){
+         this.kill(); 
+      }
+
+      // Custom collision for player bullets
+   },
+   draw : function(ctx, delta){
+      ctx.fillStyle = this.color.toString();
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.width, 0, 2*Math.PI);
+      ctx.closePath();
+      ctx.fill();
+   },
+   debugDraw : function(ctx, delta){
+      this.super.draw.call(this, ctx, delta);
+      var index = this.parent.children.indexOf(this);
+      ctx.fillStyle = Color.Yellow.toString();
+      ctx.fillText(index, this.x, this.y);
+   }
+});
+
+var Baddie = Actor.extend({
+   init : function(){
+      // Set sprite orientation
+      var sprite = new Drawing.Sprite(enemyPink, 0, 0, 40, 40);
+      this.addDrawing("default", sprite);
+      sprite.setScale(3);
+      this.setCenterDrawing(true);
+      sprite.transformAboutPoint(new Point(60, 60));
+      sprite.setRotation(-Math.PI/2);
+
+      // Define throttled fire function
+      this.throttledFire = throttle(fireBullet, 200);
+
+      // Build behavior
+      this.moveTo(this.x, this.y + 800, Config.enemySpeed);
+      this.moveTo(this.x + 800, this.y, Config.enemySpeed);
+      this.moveTo(this.x + 800, this.y + 800, Config.enemySpeed);
+      this.moveTo(this.x, this.y, Config.enemySpeed).repeatForever();
+
+      this.angle = 0;
+      this.vel = Config.enemyBulletVelocity;
+
+      // add event listeners
+      this.addEventListener('collision', function(evt){
+         if(!(evt.other.owner instanceof Baddie) && !(evt.other instanceof Baddie)){
+            explodeSound.play();
+            var explodeAnim = spriteSheet.getAnimationForAll(game, 40);
+            explodeAnim.setScale(3);
+            explodeAnim.play(this.x, this.y);
+            score += 100;
+            this.kill(); 
+
+         }
+      });
+   },
+   update : function(engine, delta){
+      this.super.update.call(this, engine, delta);
+      
+      this.angle += Math.PI/20;
+      var dx = this.vel * Math.cos(this.angle);
+      var dy = this.vel * Math.sin(this.angle);
+      var b = this.throttledFire(this.getCenter().x, this.getCenter().y, dx, dy);
+      if(b){
+         //enemyFireSound.play();
+         b.owner = this;
+      }
+   }
+});

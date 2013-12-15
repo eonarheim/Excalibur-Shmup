@@ -1,0 +1,80 @@
+// Main Game Logic
+
+var game = new Engine();
+game.backgroundColor = Color.Black;
+game.setAntialiasing(false);
+var gameOver = false;
+var score = 0;
+var fighter = new Texture('res/fighter.png');
+var enemyPink = new Texture('res/enemy.png');
+var explosion = new Texture('res/spriteexplosion.png');
+
+var laserSound = new Sound('res/laser.wav');
+var enemyFireSound = new Sound('res/enemyfire.wav');
+var explodeSound = new Sound('res/explode.wav');
+var hitSound = new Sound('res/hit.wav');
+
+var loader = new Loader([fighter, enemyPink, explosion, laserSound, explodeSound, hitSound, enemyFireSound]);
+
+var spriteSheet;
+game.load(loader).then(function(){
+   laserSound.setVolume(Config.soundVolume);
+   explodeSound.setVolume(Config.soundVolume);
+   enemyFireSound.setVolume(Config.soundVolume);
+   
+   spriteSheet = new Drawing.SpriteSheet(explosion, 5, 5, 45, 45);
+   console.log("Game Resources Loaded");
+});
+
+
+var ship = new Ship(game.width/2, 800, 80, 80, Color.Azure);
+game.addChild(ship);
+
+var healthBar = new HealthBar(20, game.height - Config.healthBarHeight - 20, Config.healthBarWidth, Config.healthBarHeight, Color.Green);
+game.addChild(healthBar);
+
+var scoreLabel = new Label("Score: " + score, 20, 50);
+scoreLabel.color = Color.Azure;
+scoreLabel.scale = 3;
+scoreLabel.addEventListener('update', function(evt){
+   this.text = "Score: " + score;
+});
+game.addChild(scoreLabel);
+
+// Create updater actor
+var gameoverLabel;
+var totalElapsed = 0;
+var updater = new Actor();
+game.addChild(updater);
+updater.addEventListener('update', function(evt){
+   totalElapsed += evt.delta;
+   if(totalElapsed > Config.spawnTime && !gameOver){
+      totalElapsed = 0;
+      var bad = new Baddie(Math.random()*1000 + 200, -100, 80, 80, Color.Green);
+      game.addChild(bad);      
+   }
+
+   if(gameOver && !gameoverLabel){
+      gameoverLabel = new Label("Game Over", game.width/2 - 400, game.height/2);      
+      gameoverLabel.color = Color.Green;
+      gameoverLabel.scale = 8;
+      gameoverLabel.blink(1, 1000, 400).repeatForever();
+      game.addChild(gameoverLabel);
+   }
+});
+
+// Game events to handle
+game.addEventListener('blur', function(){
+   game.stop();
+});
+game.addEventListener('focus', function(){
+   game.start();
+})
+
+game.addEventListener('keydown', function(evt){
+   if(evt.key === Keys.D){
+      game.isDebug = !game.isDebug;
+   }
+});
+
+game.start();
