@@ -13,7 +13,9 @@ var HealthBar = Actor.extend({
       ctx.fillText("HP ", 0, 0);
       ctx.restore();
       ctx.fillStyle = this.color.toString();
+      ctx.strokeStyle = this.color.toString();
       ctx.fillRect(this.x + 50, this.y - this.height, this.width, this.height);
+      ctx.strokeRect(this.x + 50, this.y - this.height, Config.healthBarWidth, this.height);
    }
 });
 
@@ -21,11 +23,14 @@ var Ship = Actor.extend({
    init : function(){
       this.fixed = true;
       var sprite = new Drawing.Sprite(fighter, 0, 0, 40, 40);
+      var spriteAnim = gameSheet.getAnimationByIndices(game, [0, 1, 2], 100);
+      spriteAnim.loop = true;
+      spriteAnim.setScale(4);
       sprite.setScale(3);
       this.setCenterDrawing(true);
       sprite.transformAboutPoint(new Point(60, 60));
       sprite.setRotation(-Math.PI/2);
-      this.addDrawing("fighter", sprite);
+      this.addDrawing("default", spriteAnim);
 
 
       this.hp = Config.totalHp;
@@ -58,6 +63,13 @@ var Ship = Actor.extend({
          }
          if(Keys.LEFT == evt.key || Keys.RIGHT == evt.key){
             this.dx = 0;
+         }
+      });
+
+      this.addEventListener('keydown', function(evt){
+         if(Keys.F == evt.key){
+            var m = fireMissile(this.getCenter().x-10, this.getCenter().y - 100);
+            m.owner = this;
          }
       });
 
@@ -94,6 +106,39 @@ var Ship = Actor.extend({
    }
 });
 
+var Missile = Actor.extend({
+   init : function() {
+      var anim = gameSheet.getAnimationByIndices(game, [13, 14, 15], 50);
+      anim.loop = true;
+      this.setHeight(60);
+      this.setWidth(20);
+      this.setCenterDrawing(true);
+      this.addDrawing("default", anim);
+      anim.setScale(3);
+      rocketSound.play();
+
+      this.addEventListener('collision', function(evt){
+         if(evt.other !== this.owner && !(evt.other instanceof Bullet)){
+            rocketSound.stop();
+            explodeSound.play();
+            this.kill();
+         }
+      });
+   },
+   update : function(engine, delta){
+      this.super.update.call(this, engine, delta);
+
+      // Clean up if bullets leave the viewport
+      if(this.x > engine.width || 
+         this.x < 0 || 
+         this.y > engine.height || 
+         this.y < 0){
+         rocketSound.stop();
+         this.kill(); 
+      }
+   }
+});
+
 var Bullet = Actor.extend({
    init : function(){
       this.addEventListener('collision', function(evt){
@@ -114,14 +159,15 @@ var Bullet = Actor.extend({
       }
 
       // Custom collision for player bullets
-   },
+   },/*
    draw : function(ctx, delta){
       ctx.fillStyle = this.color.toString();
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.width, 0, 2*Math.PI);
       ctx.closePath();
       ctx.fill();
-   },
+
+   },*/
    debugDraw : function(ctx, delta){
       this.super.draw.call(this, ctx, delta);
       var index = this.parent.children.indexOf(this);
@@ -134,14 +180,15 @@ var Baddie = Actor.extend({
    init : function(){
       // Set sprite orientation
       var sprite = new Drawing.Sprite(enemyPink, 0, 0, 40, 40);
-      this.addDrawing("default", sprite);
-      sprite.setScale(3);
+
+      var spriteAnim = gameSheet.getAnimationByIndices(game, [10, 11, 12], 100);
+      spriteAnim.loop = true;
+      spriteAnim.setScale(4);
+      this.addDrawing("default", spriteAnim);
       this.setCenterDrawing(true);
-      sprite.transformAboutPoint(new Point(60, 60));
-      sprite.setRotation(-Math.PI/2);
 
       // Define throttled fire function
-      this.throttledFire = throttle(fireBullet, 200);
+      this.throttledFire = throttle(enemyFire, 200);
 
       // Build behavior
       this.moveTo(this.x, this.y + 800, Config.enemySpeed);
@@ -171,7 +218,7 @@ var Baddie = Actor.extend({
       this.angle += Math.PI/20;
       var dx = this.vel * Math.cos(this.angle);
       var dy = this.vel * Math.sin(this.angle);
-      var b = this.throttledFire(this.getCenter().x, this.getCenter().y, dx, dy);
+      var b = this.throttledFire(this.getCenter().x, this.getCenter().y+25, dx, dy);
       if(b){
          //enemyFireSound.play();
          b.owner = this;

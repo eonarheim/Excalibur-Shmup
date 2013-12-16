@@ -8,21 +8,27 @@ var score = 0;
 var fighter = new Texture('res/fighter.png');
 var enemyPink = new Texture('res/enemy.png');
 var explosion = new Texture('res/spriteexplosion.png');
+var sheet = new Texture('res/gameSheet.png');
 
 var laserSound = new Sound('res/laser.wav');
 var enemyFireSound = new Sound('res/enemyfire.wav');
 var explodeSound = new Sound('res/explode.wav');
 var hitSound = new Sound('res/hit.wav');
+var powerUp = new Sound('res/powerup.wav');
+var rocketSound = new Sound('res/rocket.wav');
 
-var loader = new Loader([fighter, enemyPink, explosion, laserSound, explodeSound, hitSound, enemyFireSound]);
+var loader = new Loader([sheet, fighter, enemyPink, explosion, laserSound, explodeSound, hitSound, enemyFireSound, powerUp, rocketSound]);
 
-var spriteSheet;
+var spriteSheet = new Drawing.SpriteSheet(explosion, 5, 5, 45, 45);
+var gameSheet = new Drawing.SpriteSheet(sheet, 10.0, 10.0, 32.0, 32.0);
+
 game.load(loader).then(function(){
    laserSound.setVolume(Config.soundVolume);
    explodeSound.setVolume(Config.soundVolume);
    enemyFireSound.setVolume(Config.soundVolume);
+   powerUp.setVolume(Config.soundVolume);   
+   rocketSound.setVolume(Config.soundVolume);
    
-   spriteSheet = new Drawing.SpriteSheet(explosion, 5, 5, 45, 45);
    console.log("Game Resources Loaded");
 });
 
