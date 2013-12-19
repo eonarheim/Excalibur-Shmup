@@ -37,6 +37,7 @@ var flipFire = throttle(function(){
 
 var getEnemyBulletAnim = function(){
    var anim = gameSheet.getAnimationByIndices(game, [3, 4, 5, 6, 7, 8, 7, 6, 5, 4], 100);
+   anim.setScale(2);
    anim.loop = true;   
    return anim;
 };

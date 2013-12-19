@@ -1,17 +1,20 @@
 // Actors 
 
-var HealthBar = Actor.extend({
+var HealthBar = Label.extend({
    init: function(){
       this.preventCollisions = true;
+      this.text = "HP ";
+      this.font = Config.font;
+      this.scale = 3;
+      this.x = 20;
+      this.y = game.height - Config.healthBarHeight - 20;
+      this.width = Config.healthBarWidth;
+      this.height = Config.healthBarHeight;
+      this.color = Color.Green;
    },
    draw : function(ctx, delta){
-      ctx.save();
-      ctx.translate(this.x, this.y);
-      ctx.scale(3,3);
-      ctx.fillStyle = this.color.toString();
-      ctx.font = Config.font;
-      ctx.fillText("HP ", 0, 0);
-      ctx.restore();
+      this.super.draw.call(this, ctx, delta);
+
       ctx.fillStyle = this.color.toString();
       ctx.strokeStyle = this.color.toString();
       ctx.fillRect(this.x + 50, this.y - this.height, this.width, this.height);
@@ -58,16 +61,16 @@ var Ship = Actor.extend({
       });
 
       this.addEventListener('keyup', function(evt){
-         if(Keys.UP == evt.key || Keys.DOWN == evt.key){
+         if(InputKey.Up == evt.key || InputKey.Down == evt.key){
             this.dy = 0;
          }
-         if(Keys.LEFT == evt.key || Keys.RIGHT == evt.key){
+         if(InputKey.Left == evt.key || InputKey.Right == evt.key){
             this.dx = 0;
          }
       });
 
       this.addEventListener('keydown', function(evt){
-         if(Keys.F == evt.key){
+         if(InputKey.F == evt.key){
             var m = fireMissile(this.getCenter().x-10, this.getCenter().y - 100);
             m.owner = this;
          }

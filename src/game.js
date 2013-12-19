@@ -36,7 +36,7 @@ game.load(loader).then(function(){
 var ship = new Ship(game.width/2, 800, 80, 80, Color.Azure);
 game.addChild(ship);
 
-var healthBar = new HealthBar(20, game.height - Config.healthBarHeight - 20, Config.healthBarWidth, Config.healthBarHeight, Color.Green);
+var healthBar = new HealthBar();
 game.addChild(healthBar);
 
 var scoreLabel = new Label("Score: " + score, 20, 50);
@@ -50,9 +50,7 @@ game.addChild(scoreLabel);
 // Create updater actor
 var gameoverLabel;
 var totalElapsed = 0;
-var updater = new Actor();
-game.addChild(updater);
-updater.addEventListener('update', function(evt){
+game.addEventListener('update', function(evt){
    totalElapsed += evt.delta;
    if(totalElapsed > Config.spawnTime && !gameOver){
       totalElapsed = 0;
@@ -61,7 +59,7 @@ updater.addEventListener('update', function(evt){
    }
 
    if(gameOver && !gameoverLabel){
-      gameoverLabel = new Label("Game Over", game.width/2 - 400, game.height/2);      
+      gameoverLabel = new Label("Game Over", game.width/2 - 250, game.height/2);      
       gameoverLabel.color = Color.Green;
       gameoverLabel.scale = 8;
       gameoverLabel.blink(1, 1000, 400).repeatForever();
@@ -78,7 +76,7 @@ game.addEventListener('focus', function(){
 })
 
 game.addEventListener('keydown', function(evt){
-   if(evt.key === Keys.D){
+   if(evt.key === InputKey.D){
       game.isDebug = !game.isDebug;
    }
 });
